@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>The Library of Simulon</title>
+<style>
+  :root{
+    --ink:#111;
+    --muted:#666;
+    --rule:#000;
+    --bg:#fff;
+  }
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);}
+  body{font-family: "Times New Roman", Times, serif;}
+  /* Header */
+  .header{
+    display:flex; align-items:center; gap:18px;
+    padding:28px 20px 10px 20px; border-bottom:1px solid var(--rule);
+  }
+  .logo{
+    width:72px; height:72px; display:inline-block;
+  }
+  .title-wrap{line-height:1.05}
+  .title{
+    font-weight: 700; font-size: clamp(22px, 3.4vw, 40px);
+    letter-spacing:.3px;
+  }
+  .subtitle{
+    font-size: clamp(14px, 1.5vw, 18px); color:var(--muted);
+  }
+
+  /* Index layout */
+  .index{
+    max-width:1100px; margin: 24px auto 80px; padding: 0 16px;
+  }
+  .row{
+    display:grid;
+    grid-template-columns: 120px 1fr;
+    gap: 18px;
+    padding: 22px 0;
+    border-bottom: 1px solid #ddd;
+  }
+  .letter{
+    font-weight:700;
+    font-size: clamp(42px, 6vw, 80px);
+    line-height: .9;
+  }
+  .list{
+    display:flex; flex-wrap:wrap; gap: 10px 18px;
+    align-content:flex-start;
+  }
+  .list a{
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--ink);
+    padding-bottom: 2px;
+    transition: .15s ease;
+    font-size: clamp(16px, 1.8vw, 20px);
+  }
+  .list a:hover{
+    border-bottom-style: solid;
+    transform: translateY(-1px);
+  }
+  /* Tiny badges show the full domain on hover (accessible fallback via title attr) */
+  .list a::after{
+    content:""; display:none;
+  }
+
+  /* Footer note */
+  .note{
+    max-width:1100px; margin: 18px auto 40px; padding: 0 16px;
+    color: var(--muted); font-size: 15px;
+  }
+
+  /* Make rows a bit tighter on very small screens */
+  @media (max-width:560px){
+    .row{grid-template-columns: 84px 1fr}
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <!-- Black & white inline SVG logo (open book + torch in a wreath/circle) -->
+  <svg class="logo" viewBox="0 0 100 100" aria-hidden="true" role="img">
+    <!-- Outer circle -->
+    <circle cx="50" cy="50" r="47" fill="none" stroke="#000" stroke-width="3"/>
+    <!-- Open book -->
+    <path d="M20 63
+             c12 -8 24 -8 30 0
+             c-6 -2 -18 -2 -30 0 z"
+          fill="#000" />
+    <path d="M80 63
+             c-12 -8 -24 -8 -30 0
+             c6 -2 18 -2 30 0 z"
+          fill="#000" />
+    <!-- Book pages -->
+    <path d="M19 62 c12 -9 24 -9 31 0" fill="none" stroke="#000" stroke-width="2"/>
+    <path d="M81 62 c-12 -9 -24 -9 -31 0" fill="none" stroke="#000" stroke-width="2"/>
+    <!-- Torch (knowledge) -->
+    <rect x="48" y="32" width="4" height="22" fill="#000"/>
+    <path d="M50 18
+             c10 6 10 13 0 14
+             c-10 -1 -10 -8 0 -14z"
+          fill="#000"/>
+    <!-- Laurel hint -->
+    <path d="M28 78 c6 -6 10 -10 16 -12" fill="none" stroke="#000" stroke-width="2" />
+    <path d="M72 78 c-6 -6 -10 -10 -16 -12" fill="none" stroke="#000" stroke-width="2" />
+  </svg>
+
+  <div class="title-wrap">
+    <div class="title"><strong>The Library of Simulon, New Canada, Earth</strong></div>
+    <div class="subtitle">Alphabetical Catalogue in Roman Type</div>
+  </div>
+</header>
+
+<main class="index" id="index"></main>
+
+<p class="note">Titles are derived from their URLs: entries beginning with <em>simulon-</em> show only the trailing part (e.g., <em>light</em>, <em>gravity</em>); others display as given.</p>
+
+<script>
+  // Raw slugs from the prompt (with duplicates preserved here; we will de-dupe below)
+  const slugs = [
+    "simulon-light","simulon-gravity","simulon-tumbling","simulon-dsn","simulon-alien",
+    "simulon-v1","simulon-ui","simulon-v1","simulon-scroller","simulon-currency",
+    "simulon-reindex","simulon-star","simulon-state","simulon-oo","simulon-obt",
+    "simulon-invaders","simulon-planet","simulon-celestial","simulon-lang",
+    "simulon-pareto","simulon-bond","kruger-pe8l","krugernp","simulon","simulon-flock",
+    "simulon-carto","new-canada","newcanada","simulon-human","simulon-reindex",
+    "simulon-inertia","warpdrive"
+  ];
+
+  // Deduplicate while preserving insertion order
+  const uniqueSlugs = [...new Set(slugs)];
+
+  // Extract display title per your rule
+  function extractTitle(slug){
+    if (slug.startsWith("simulon-")) {
+      const tail = slug.slice(8);
+      // Capitalize first alpha letter, keep the rest as-is (so "v1" stays "v1", "oo" -> "Oo")
+      if (/^[a-z]/.test(tail)) return tail.charAt(0).toUpperCase() + tail.slice(1);
+      return tail;
+    }
+    return slug; // show as provided for krugernp, kruger-pe8l, new-canada, etc.
+  }
+
+  // Group by first letter (A–Z), anything else -> '#'
+  const groups = {};
+  for (const slug of uniqueSlugs) {
+    const title = extractTitle(slug);
+    const first = (title[0] || "").toUpperCase();
+    const letter = first.match(/[A-Z]/) ? first : "#";
+    if (!groups[letter]) groups[letter] = [];
+    groups[letter].push({ slug, title });
+  }
+
+  // Sort letters A→Z (with '#' at the end), and items by title
+  const letters = Object.keys(groups)
+    .sort((a,b)=>{
+      if (a === "#") return 1;
+      if (b === "#") return -1;
+      return a.localeCompare(b);
+    });
+
+  for (const L of letters) {
+    groups[L].sort((a,b)=> a.title.localeCompare(b.title));
+  }
+
+  // Render
+  const mount = document.getElementById("index");
+  for (const L of letters) {
+    const row = document.createElement("section");
+    row.className = "row";
+
+    const letter = document.createElement("div");
+    letter.className = "letter";
+    letter.textContent = L;
+    row.appendChild(letter);
+
+    const list = document.createElement("div");
+    list.className = "list";
+
+    groups[L].forEach(({slug, title})=>{
+      const a = document.createElement("a");
+      const href = `https://${slug}.onrender.com`;
+      a.href = href;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = title;
+      a.title = href;
+      list.appendChild(a);
+    });
+
+    row.appendChild(list);
+    mount.appendChild(row);
+  }
+</script>
+
+</body>
+</html>
