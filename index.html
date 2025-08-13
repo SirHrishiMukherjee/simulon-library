@@ -62,18 +62,12 @@
     border-bottom-style: solid;
     transform: translateY(-1px);
   }
-  /* Tiny badges show the full domain on hover (accessible fallback via title attr) */
-  .list a::after{
-    content:""; display:none;
-  }
 
-  /* Footer note */
   .note{
     max-width:1100px; margin: 18px auto 40px; padding: 0 16px;
     color: var(--muted); font-size: 15px;
   }
 
-  /* Make rows a bit tighter on very small screens */
   @media (max-width:560px){
     .row{grid-template-columns: 84px 1fr}
   }
@@ -84,27 +78,13 @@
 <header class="header">
   <!-- Black & white inline SVG logo (open book + torch in a wreath/circle) -->
   <svg class="logo" viewBox="0 0 100 100" aria-hidden="true" role="img">
-    <!-- Outer circle -->
     <circle cx="50" cy="50" r="47" fill="none" stroke="#000" stroke-width="3"/>
-    <!-- Open book -->
-    <path d="M20 63
-             c12 -8 24 -8 30 0
-             c-6 -2 -18 -2 -30 0 z"
-          fill="#000" />
-    <path d="M80 63
-             c-12 -8 -24 -8 -30 0
-             c6 -2 18 -2 30 0 z"
-          fill="#000" />
-    <!-- Book pages -->
+    <path d="M20 63 c12 -8 24 -8 30 0 c-6 -2 -18 -2 -30 0 z" fill="#000" />
+    <path d="M80 63 c-12 -8 -24 -8 -30 0 c6 -2 18 -2 30 0 z" fill="#000" />
     <path d="M19 62 c12 -9 24 -9 31 0" fill="none" stroke="#000" stroke-width="2"/>
     <path d="M81 62 c-12 -9 -24 -9 -31 0" fill="none" stroke="#000" stroke-width="2"/>
-    <!-- Torch (knowledge) -->
     <rect x="48" y="32" width="4" height="22" fill="#000"/>
-    <path d="M50 18
-             c10 6 10 13 0 14
-             c-10 -1 -10 -8 0 -14z"
-          fill="#000"/>
-    <!-- Laurel hint -->
+    <path d="M50 18 c10 6 10 13 0 14 c-10 -1 -10 -8 0 -14z" fill="#000"/>
     <path d="M28 78 c6 -6 10 -10 16 -12" fill="none" stroke="#000" stroke-width="2" />
     <path d="M72 78 c-6 -6 -10 -10 -16 -12" fill="none" stroke="#000" stroke-width="2" />
   </svg>
@@ -117,10 +97,12 @@
 
 <main class="index" id="index"></main>
 
-<p class="note">Titles are derived from their URLs: entries beginning with <em>simulon-</em> show only the trailing part (e.g., <em>light</em>, <em>gravity</em>); others display as given.</p>
+<p class="note">
+  Titles are derived from their URLs: entries beginning with <em>simulon-</em> show only the trailing part (e.g., <em>light</em>, <em>gravity</em>); others display as given. Includes a one-off external record titled <em>Zenodo</em>.
+</p>
 
 <script>
-  // Raw slugs from the prompt (with duplicates preserved here; we will de-dupe below)
+  // Onrender slugs from the original list (deduped later)
   const slugs = [
     "simulon-light","simulon-gravity","simulon-tumbling","simulon-dsn","simulon-alien",
     "simulon-v1","simulon-ui","simulon-v1","simulon-scroller","simulon-currency",
@@ -131,41 +113,53 @@
     "simulon-inertia","warpdrive"
   ];
 
-  // Deduplicate while preserving insertion order
+  // One-off external links with explicit titles
+  const extras = [
+    { href: "https://zenodo.org/records/15867130", title: "Zenodo" }
+  ];
+
+  // Deduplicate slugs while preserving order
   const uniqueSlugs = [...new Set(slugs)];
 
-  // Extract display title per your rule
+  // Extract display title per rule
   function extractTitle(slug){
     if (slug.startsWith("simulon-")) {
       const tail = slug.slice(8);
-      // Capitalize first alpha letter, keep the rest as-is (so "v1" stays "v1", "oo" -> "Oo")
       if (/^[a-z]/.test(tail)) return tail.charAt(0).toUpperCase() + tail.slice(1);
       return tail;
     }
-    return slug; // show as provided for krugernp, kruger-pe8l, new-canada, etc.
+    return slug;
   }
 
-  // Group by first letter (A–Z), anything else -> '#'
+  // Build entries from slugs -> full href + title
+  const entriesFromSlugs = uniqueSlugs.map(slug => ({
+    href: `https://${slug}.onrender.com`,
+    title: extractTitle(slug)
+  }));
+
+  // Combine with extras and dedupe by href (in case of accidental overlap)
+  const hrefMap = new Map();
+  [...entriesFromSlugs, ...extras].forEach(e => {
+    if (!hrefMap.has(e.href)) hrefMap.set(e.href, e);
+  });
+  const entries = Array.from(hrefMap.values());
+
+  // Group by first letter of title (A–Z), non-letters -> '#'
   const groups = {};
-  for (const slug of uniqueSlugs) {
-    const title = extractTitle(slug);
+  for (const {href, title} of entries) {
     const first = (title[0] || "").toUpperCase();
-    const letter = first.match(/[A-Z]/) ? first : "#";
+    const letter = /^[A-Z]$/.test(first) ? first : "#";
     if (!groups[letter]) groups[letter] = [];
-    groups[letter].push({ slug, title });
+    groups[letter].push({ href, title });
   }
 
-  // Sort letters A→Z (with '#' at the end), and items by title
-  const letters = Object.keys(groups)
-    .sort((a,b)=>{
-      if (a === "#") return 1;
-      if (b === "#") return -1;
-      return a.localeCompare(b);
-    });
-
-  for (const L of letters) {
-    groups[L].sort((a,b)=> a.title.localeCompare(b.title));
-  }
+  // Sort letters A→Z (with '#' last) and items by title
+  const letters = Object.keys(groups).sort((a,b)=>{
+    if (a === "#") return 1;
+    if (b === "#") return -1;
+    return a.localeCompare(b);
+  });
+  letters.forEach(L => groups[L].sort((a,b)=> a.title.localeCompare(b.title)));
 
   // Render
   const mount = document.getElementById("index");
@@ -181,9 +175,8 @@
     const list = document.createElement("div");
     list.className = "list";
 
-    groups[L].forEach(({slug, title})=>{
+    groups[L].forEach(({href, title})=>{
       const a = document.createElement("a");
-      const href = `https://${slug}.onrender.com`;
       a.href = href;
       a.target = "_blank";
       a.rel = "noopener";
