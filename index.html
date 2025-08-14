@@ -102,7 +102,7 @@
 </p>
 
 <script>
-  // Onrender slugs from the original list (deduped later)
+  // Onrender slugs (deduped later). Added: "simulon-cii", "invention-obt".
   const slugs = [
     "simulon-light","simulon-gravity","simulon-tumbling","simulon-dsn","simulon-alien",
     "simulon-v1","simulon-ui","simulon-v1","simulon-scroller","simulon-currency",
@@ -110,7 +110,7 @@
     "simulon-invaders","simulon-planet","simulon-celestial","simulon-lang",
     "simulon-pareto","simulon-bond","kruger-pe8l","krugernp","simulon","simulon-flock",
     "simulon-carto","new-canada","newcanada","simulon-human","simulon-reindex",
-    "simulon-inertia","warpdrive"
+    "simulon-inertia","warpdrive","simulon-cii","invention-obt"
   ];
 
   // One-off external links with explicit titles
@@ -137,7 +137,7 @@
     title: extractTitle(slug)
   }));
 
-  // Combine with extras and dedupe by href (in case of accidental overlap)
+  // Combine with extras and dedupe by href
   const hrefMap = new Map();
   [...entriesFromSlugs, ...extras].forEach(e => {
     if (!hrefMap.has(e.href)) hrefMap.set(e.href, e);
